@@ -365,6 +365,11 @@ function scan_url($url)
         return $depth--;
     }
 
+    if (check_noindex($html)) {
+        logger("Found noindex, skipping.", 1);
+        return $depth--;
+    }
+
     if (strpos($url, "&") && strpos($url, ";") === false) {
         $url = str_replace("&", "&amp;", $url);
     }
@@ -412,6 +417,26 @@ function scan_url($url)
         }
     }
     $depth--;
+}
+
+function check_noindex($html)
+{
+    $matches = array();
+    if (!preg_match_all("/<meta\b.+\/>/i", $html, $matches)) {
+        return false;
+    }
+    foreach ($matches[0] as $meta) {
+        $meta = strtolower($meta);
+        if (str_contains($meta, "robots") && str_contains($meta, "noindex"))  {
+            $xml = new SimpleXMLElement($meta);
+            if ($xml['name'] == 'robots'){
+                $content = $xml['content'];
+                if  (str_contains($content, "noindex")){
+                    return true;
+                }
+            }
+        }
+    }
 }
 
 // fnmatch() filler for non-POSIX systems
